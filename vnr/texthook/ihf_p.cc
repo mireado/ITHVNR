@@ -7,7 +7,6 @@
 #include "host/host.h"
 #include "vnrhook/include/types.h"
 #include "ithsys/ithsys.h"
-#include "wintimer/wintimer.h"
 #include <QtCore/QDebug>
 
 #ifdef WITH_LIB_WINMAKER

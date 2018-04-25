@@ -9,7 +9,6 @@
 
 #include "settings.h"
 #include "textthread.h"
-//#include "wintimer/wintimer.h"
 #include "vnrhook/include/const.h"
 #include "ithsys/ithsys.h"
 #include <stdio.h>

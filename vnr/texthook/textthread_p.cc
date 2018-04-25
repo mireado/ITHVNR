@@ -4,7 +4,6 @@
 #include "texthook/textthread_p.h"
 #include "texthook/texthook_p.h"
 #include "winmutex/winmutex.h"
-#include "wintimer/wintimer.h"
 #include "host/textthread.h"
 #include <QtCore/QRegExp>
 
