@@ -62,10 +62,6 @@ set(vnrhook_src
   ${PROJECT_SOURCE_DIR}/winkey/winkey.h
   ${PROJECT_SOURCE_DIR}/winversion/winversion.cc
   ${PROJECT_SOURCE_DIR}/winversion/winversion.h
-  ${PROJECT_SOURCE_DIR}/winseh/winseh.h
-  ${PROJECT_SOURCE_DIR}/winseh/winseh.cc
-  ${PROJECT_SOURCE_DIR}/winseh/winseh_safe.cc
-  ${PROJECT_SOURCE_DIR}/winseh/safeseh.asm
   ${PROJECT_SOURCE_DIR}/mono/monoobject.h
   ${PROJECT_SOURCE_DIR}/mono/monotype.h
 )
@@ -73,13 +69,6 @@ set(vnrhook_src
 add_library(vnrhook SHARED ${vnrhook_src})
 
 enable_language(ASM_MASM)
-
-set_source_files_properties(
-  ${PROJECT_SOURCE_DIR}/winseh/safeseh.asm
-  PROPERTIES
-  # CMAKE_ASM_MASM_FLAGS /safeseh # CMake bug 14711: http://www.cmake.org/Bug/view.php?id=14711
-  COMPILE_FLAGS /safeseh
-)
 
 set_target_properties(vnrhook PROPERTIES
   LINK_FLAGS "/SUBSYSTEM:WINDOWS /MANIFEST:NO"

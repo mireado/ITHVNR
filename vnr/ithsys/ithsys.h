@@ -119,8 +119,6 @@ public:
 void IthCoolDown();
 
 BOOL IthIsWine();
-BOOL IthIsWindowsXp();
-//BOOL IthIsWindows8OrGreater(); // not public
 
 /** Get current dll path.
  *  @param  buf
