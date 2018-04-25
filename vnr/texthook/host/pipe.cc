@@ -128,7 +128,7 @@ void CreateNewPipe()
     return;
   }
 
-  hThread = IthCreateThread(RecvThread, (DWORD)hTextPipe);
+  hThread = IthCreateRemoteThread(RecvThread, (DWORD)hTextPipe);
   man->RegisterPipe(hTextPipe, hCmdPipe, hThread);
 }
 

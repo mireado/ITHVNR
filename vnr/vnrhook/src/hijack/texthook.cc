@@ -486,8 +486,6 @@ DWORD TextHook::UnsafeSend(DWORD dwDataBase, DWORD dwRetn)
     *((DWORD *)pbData + 2) = dwSplit;
     if (dwCount) {
       IO_STATUS_BLOCK ios = {};
-
-      IthCoolDown(); // jichi 9/28/2013: cool down to prevent parallelization in wine
       //CliLockPipe();
       if (STATUS_PENDING == NtWriteFile(::hPipe, 0, 0, 0, &ios, pbData, dwCount + HEADER_SIZE, 0, 0)) {
         NtWaitForSingleObject(::hPipe, 0, 0);
