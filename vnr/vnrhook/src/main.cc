@@ -231,8 +231,8 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
       AddAllModules();
       InitFilterTable();
 
-      hSendThread = IthCreateThread(WaitForPipe, 0);
-      hCmdThread = IthCreateThread(CommandPipe, 0);
+      hSendThread = IthCreateRemoteThread(WaitForPipe, 0);
+      hCmdThread = IthCreateRemoteThread(CommandPipe, 0);
     } break;
   case DLL_PROCESS_DETACH:
     {
@@ -263,7 +263,7 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
       for (TextHook *man = ::hookman; man->RemoveHook(); man++);
       //LARGE_INTEGER lint = {-10000, -1};
       while (::enter_count)
-        IthSleep(1); // jichi 9/28/2013: sleep for 1 ms
+        Sleep(1); // jichi 9/28/2013: sleep for 1 ms
         //NtDelayExecution(0, &lint);
       for (TextHook *man = ::hookman; man < ::hookman + MAX_HOOK; man++)
         man->ClearHook();

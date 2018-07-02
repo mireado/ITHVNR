@@ -17,7 +17,6 @@
 #include "vnrhook/include/types.h"
 #include "ithsys/ithsys.h"
 #include "windbg/inject.h"
-#include "winmaker/winmaker.h"
 #include "ccutil/ccmacro.h"
 #include <commctrl.h>
 
@@ -63,20 +62,10 @@ void GetDebugPriv()
 
   TOKEN_PRIVILEGES Privileges = {1,{0x14,0,SE_PRIVILEGE_ENABLED}};
 
-  NtOpenProcessToken(NtCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
+  OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
 
   status = NtAdjustPrivilegesToken(hToken, 0, &Privileges, sizeof(Privileges), 0, &dwRet);
-  //if (STATUS_SUCCESS == status)
-  //{
-  //  admin = 1;
-  //}
-  //else
-  //{
-  //  WCHAR buffer[0x10];
-  //  swprintf(buffer, L"%.8X",status);
-  //  MessageBox(0, NotAdmin, buffer, 0);
-  //}
-  NtClose(hToken);
+  CloseHandle(hToken);
 }
 
 bool sendCommand(HANDLE hCmd, HostCommandType cmd)

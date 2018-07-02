@@ -308,7 +308,7 @@ bool Util::unloadCurrentModule()
 {
   auto fun = ::FreeLibrary;
   //auto fun = ::LdrUnloadDll;
-  if (HANDLE h = ::IthCreateThread(fun, (DWORD)&__ImageBase)) {
+  if (HANDLE h = ::IthCreateRemoteThread(fun, (DWORD)&__ImageBase)) {
     //const LONGLONG timeout = -50000000; // in nanoseconds = 5 seconds
     //NtWaitForSingleObject(h, 0, (PLARGE_INTEGER)&timeout);
     NtClose(h);

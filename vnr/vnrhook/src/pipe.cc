@@ -145,7 +145,6 @@ DWORD WINAPI WaitForPipe(LPVOID lpThreadParameter) // Dynamically detect ITH mai
       if (hookman[i].RemoveHook())
         count++;
     if (!::running) {
-      IthCoolDown(); // jichi 9/28/2013: Use cooldown instead of lock pipe to prevent from hanging on exit
       //CliLockPipe();
       //NtWriteFile(::hPipe, 0, 0, 0, &ios, man, 4, 0, 0);
       NtWriteFile(::hPipe, 0, 0, 0, &ios, hookman, 4, 0, 0);

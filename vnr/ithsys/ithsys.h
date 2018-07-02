@@ -51,7 +51,7 @@ HANDLE IthCreateMutex(LPCWSTR name, BOOL InitialOwner, DWORD *exist=0);
 HANDLE IthOpenMutex(LPCWSTR name);
 BOOL IthReleaseMutex(HANDLE hMutex);
 //DWORD IthWaitForSingleObject(HANDLE hObject, DWORD dwTime);
-HANDLE IthCreateThread(LPCVOID start_addr, DWORD param, HANDLE hProc=(HANDLE)-1);
+HANDLE IthCreateRemoteThread(LPCVOID start_addr, DWORD param, HANDLE hProc=(HANDLE)-1);
 DWORD GetExportAddress(DWORD hModule,DWORD hash);
 void IthSleep(int time); // jichi 9/28/2013: in ms
 void IthSystemTimeToLocalTime(LARGE_INTEGER *ptime);
@@ -116,11 +116,7 @@ public:
   void unlock()  { if (m != INVALID_HANDLE_VALUE) { IthReleaseMutex(m); m = INVALID_HANDLE_VALUE; } }
 };
 
-void IthCoolDown();
-
 BOOL IthIsWine();
-BOOL IthIsWindowsXp();
-//BOOL IthIsWindows8OrGreater(); // not public
 
 /** Get current dll path.
  *  @param  buf

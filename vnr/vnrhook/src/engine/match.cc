@@ -915,7 +915,7 @@ void Engine::hijack()
 {
   if (!hijackThread) {
     ConsoleOutput("vnreng: hijack process");
-    hijackThread = IthCreateThread(hijackThreadProc, 0);
+    hijackThread = IthCreateRemoteThread(hijackThreadProc, 0);
   }
 }
 

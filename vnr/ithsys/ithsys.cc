@@ -9,15 +9,10 @@
 #include "ithsys/ithsys.h"
 //#include "vnrhook/src/util/growl.h"
 
-//#define ITH_SYS_SECTION L"ITH_SysSection"
-#define ITH_THREADMAN_SECTION L"VNR_SYS_THREAD"
-
 // jichi 9/28/2013: Weither use NtThread or RemoteThread
 // RemoteThread works on both Windows 7 or Wine, while NtThread does not work on wine
 #define ITH_ENABLE_THREADMAN    (!IthIsWindows8OrGreater() && !IthIsWine())
 //#define ITH_ENABLE_THREADMAN    true
-
-//#define ITH_ENABLE_WINAPI // jichi: prefer Win32 API to NTDLL API
 
 // Helpers
 
@@ -26,22 +21,6 @@
 // Windows 7: 6.1, 0x1db10106
 // Windows 8: 6.2, 0x23f00206
 // Windows 10: 6.2, 0x23f00206 (build 9926):
-
-BOOL IthIsWindowsXp()
-{
-  static BOOL ret = -1; // cached
-  if (ret < 0) {
-    // http://msdn.microsoft.com/en-us/library/windows/desktop/ms724439%28v=vs.85%29.aspx
-    DWORD v = ::GetVersion();
-    BYTE major = LOBYTE(LOWORD(v));
-    //DWORD minor = (DWORD)(HIBYTE(LOWORD(v)));
-
-    // Windows XP = 5.1
-    //ret =  major < 6 ? 1 : 0;
-    ret = major < 6;
-  }
-  return ret;
-}
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/dn424972%28v=vs.85%29.aspx
 // The same as IsWindows8OrGreater, which I don't know if the function is available to lower Windows.
@@ -78,50 +57,12 @@ BOOL IthIsWine()
   return ret;
 }
 
-// jichi 9/28/2013: prevent parallelization in wine
-void IthCoolDown()
-{
-  // http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Thread/NtDelayExecution.html
-  //const LONGLONG timeout = -10000; // in 100ns, i.e. 1ms
-  //NtDelayExecution(FALSE, (PLARGE_INTEGER)&timeout);
-  //NtFlushInstructionCache(NtCurrentProcess(), (LPVOID)hp.addr, hp.recover_len);
-  // Flush the instruction cache line, and prevent wine from rending things in parallel
-  if (IthIsWine())
-    IthSleep(1); // sleep for 1 ms
-  //__asm
-  //{
-  //  //mov eax,0x2710    // = 10000
-  //  mov ecx,time
-  //  mul ecx
-  //  neg eax
-  //  adc edx,0
-  //  neg edx
-  //  push edx
-  //  push eax
-  //  push esp
-  //  push 0
-  //  call dword ptr [NtDelayExecution]
-  //  add esp,8
-  //}
-}
-
-// jichi 9/23/2013: wine deficenciy on mapping sections
-// Whe set to false, do not map sections.
-//static bool ith_has_section = true;
-
-//#ifdef ITH_WINE
-//# include "winddk/winddk.h"
-//#endif // ITH_WINE
-
-//#define SEC_BASED 0x200000    // jichi 8/24/2013: emoved
-
 // jichi 10/6/2013
 // See: http://stackoverflow.com/questions/557081/how-do-i-get-the-hmodule-for-the-currently-executing-code
 // See: http://www.codeproject.com/Articles/16598/Get-Your-DLL-s-Path-Name
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-#define CURRENT_MODULE_HANDLE  ((HINSTANCE)&__ImageBase)
 size_t IthGetCurrentModulePath(wchar_t *buf, size_t len)
-{ return ::GetModuleFileNameW(CURRENT_MODULE_HANDLE, buf, len); }
+{ return ::GetModuleFileName((HINSTANCE)&__ImageBase, buf, len); }
 
 // - Global variables -
 
@@ -181,19 +122,6 @@ inline DWORD GetShareMemory()
 
 inline LARGE_INTEGER *GetTimeBias()
 { __asm mov eax,0x7ffe0020 }
-
-
-//Get full path of current process.
-//inline LPWSTR GetModulePath()
-//{
-//  __asm
-//  {
-//    mov eax,fs:[0x30]
-//    mov eax,[eax+0xC]
-//    mov eax,[eax+0xC]
-//    mov eax,[eax+0x28]
-//  }
-//}
 
 // - Singleton classes -
 
@@ -606,11 +534,6 @@ DWORD IthGetMemoryRange(LPCVOID mem, DWORD *base, DWORD *size)
 // jichi 9/25/2013
 // See: http://publib.boulder.ibm.com/infocenter/pseries/v5r3/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/multi-byte_widechar_subr.htm
 // SJIS->Unicode. 'mb' must be null-terminated. 'wc' should have enough space ( 2*strlen(mb) is safe).
-//#ifdef ITH_WINE
-//int MB_WC(char *mb, wchar_t *wc)
-//{ return mbstowcs(wc, mb, 0x100); }
-//
-//#else
 int MB_WC(char *mb, wchar_t *wc)
 {
   __asm
@@ -645,38 +568,9 @@ _mb_fin:
   }
 }
 
-// Count characters of 'mb' string. 'mb_length' is max length.
-// jichi 9/25/2013: This function is not used
-//int MB_WC_count(char *mb, int mb_length)
-//{
-//  __asm
-//  {
-//    xor eax,eax
-//    xor edx,edx
-//    mov esi,mb
-//    mov edi,mb_length
-//    lea ebx,LeadByteTable
-//_mbc_count:
-//    mov dl,byte ptr [esi]
-//    test dl,dl
-//    jz _mbc_finish
-//    movzx ecx, byte ptr [ebx+edx]
-//    add esi,ecx
-//    inc eax
-//    sub edi,ecx
-//    ja _mbc_count
-//_mbc_finish:
-//  }
-//}
-
 // jichi 9/25/2013
 // See: http://publib.boulder.ibm.com/infocenter/pseries/v5r3/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/multi-byte_widechar_subr.htm
 // Unicode->SJIS. Analogous to MB_WC.
-//#ifdef ITH_WINE
-//int WC_MB(wchar_t *wc, char *mb)
-//{ return wcstombs(mb, wc, 0x100); }
-//
-//#else
 int WC_MB(wchar_t *wc, char *mb)
 {
   __asm
@@ -895,7 +789,7 @@ BOOL IthInitSystemService()
       return FALSE;
   }
   if (ITH_ENABLE_THREADMAN) {
-    RtlInitUnicodeString(&us, ITH_THREADMAN_SECTION);
+    RtlInitUnicodeString(&us, L"VNR_SYS_THREAD");
     if (!NT_SUCCESS(NtCreateSection(&thread_man_section, SECTION_ALL_ACCESS, &oa, &sec_size,
         PAGE_EXECUTE_READWRITE, SEC_COMMIT, 0)))
       return FALSE;
@@ -1185,52 +1079,16 @@ void IthResetEvent(HANDLE hEvent) { NtClearEvent(hEvent); }
 //If 'exist' is not null, it will be written 1 if mutex exist.
 HANDLE IthCreateMutex(LPCWSTR name, BOOL InitialOwner, DWORD *exist)
 {
-#ifdef ITH_ENABLE_WINAPI
-  HANDLE ret = ::CreateMutexW(nullptr, InitialOwner, name);
+  HANDLE ret = ::CreateMutex(nullptr, InitialOwner, name);
   if (exist)
     *exist = ret == INVALID_HANDLE_VALUE || ::GetLastError() == ERROR_ALREADY_EXISTS;
   return ret;
-#else
-#define eval    NtCreateMutant(&hMutex, MUTEX_ALL_ACCESS, poa, InitialOwner)
-  UNICODE_STRING us;
-  HANDLE hMutex;
-  NTSTATUS status;
-  OBJECT_ATTRIBUTES *poa = nullptr;
-  // jichi 9/25/2013: What the fxxx?! poa in the orignal source code of ITH
-  // is pointed to freed object on the stack?! This will crash wine!
-  if (name) {
-    //GROWL(name);
-    RtlInitUnicodeString(&us, name);
-    OBJECT_ATTRIBUTES oa = {sizeof(oa), root_obj, &us, OBJ_OPENIF, 0, 0};
-    poa = &oa;
-    status = eval;
-    //GROWL_DWORD(status);
-  } else
-    status = eval;
-  if (NT_SUCCESS(status)) {
-    if (exist)
-      *exist = status == STATUS_OBJECT_NAME_EXISTS;
-    return hMutex;
-  } else
-    return INVALID_HANDLE_VALUE;
-#undef eval
-#endif // ITH_ENABLE_WINAPI
+
 }
 
 HANDLE IthOpenMutex(LPCWSTR name)
 {
-#ifdef ITH_ENABLE_WINAPI
-  return ::OpenMutexW(MUTEX_ALL_ACCESS, FALSE, name);
-#else
-  UNICODE_STRING us;
-  RtlInitUnicodeString(&us, name);
-  OBJECT_ATTRIBUTES oa = {sizeof(oa), root_obj, &us, 0, 0, 0};
-  HANDLE hMutex;
-  if (NT_SUCCESS(NtOpenMutant(&hMutex, MUTEX_ALL_ACCESS, &oa)))
-    return hMutex;
-  else
-    return INVALID_HANDLE_VALUE;
-#endif // ITH_ENABLE_WINAPI
+  return ::OpenMutex(MUTEX_ALL_ACCESS, FALSE, name);
 }
 
 BOOL IthReleaseMutex(HANDLE hMutex)
@@ -1238,157 +1096,15 @@ BOOL IthReleaseMutex(HANDLE hMutex)
 
 //Create new thread. 'hProc' must have following right.
 //PROCESS_CREATE_THREAD, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE.
-HANDLE IthCreateThread(LPCVOID start_addr, DWORD param, HANDLE hProc)
+HANDLE IthCreateRemoteThread(LPCVOID start_addr, DWORD param, HANDLE hProc)
 {
   HANDLE hThread;
-  // jichi 9/27/2013: NtCreateThread is not implemented in Wine 1.7
-  if (thread_man_) { // Windows XP
-    // jichi 9/29/2013: Reserved && commit stack size
-    // See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366803%28v=vs.85%29.aspx
-    // See: http://msdn.microsoft.com/en-us/library/ms810627.aspx
-    enum { DEFAULT_STACK_LIMIT = 0x400000 };
-    enum { DEFAULT_STACK_COMMIT = 0x10000 };
-    enum { PAGE_SIZE = 0x1000 };
-    CLIENT_ID id;
-    LPVOID protect;
-    USER_STACK stack = {};
-    CONTEXT ctx = {CONTEXT_FULL};
-    DWORD size = DEFAULT_STACK_LIMIT,
-          commit = DEFAULT_STACK_COMMIT;
-    if (!NT_SUCCESS(NtAllocateVirtualMemory(hProc, &stack.ExpandableStackBottom, 0, &size, MEM_RESERVE, PAGE_READWRITE)))
-      return INVALID_HANDLE_VALUE;
-
-    stack.ExpandableStackBase = (char *)stack.ExpandableStackBottom + size;
-    stack.ExpandableStackLimit = (char *)stack.ExpandableStackBase - commit;
-    size = PAGE_SIZE;
-    commit += size;
-    protect = (char *)stack.ExpandableStackBase - commit;
-    NtAllocateVirtualMemory(hProc, &protect, 0, &commit, MEM_COMMIT, PAGE_READWRITE);
-    DWORD oldAccess; // jichi 9/29/2013: unused
-    NtProtectVirtualMemory(hProc, &protect, &size, PAGE_READWRITE|PAGE_GUARD, &oldAccess);
-    ctx.SegGs = 0;
-    ctx.SegFs = 0x38;
-    ctx.SegEs = 0x20;
-    ctx.SegDs = 0x20;
-    ctx.SegSs = 0x20;
-    ctx.SegCs = 0x18;
-    ctx.EFlags = 0x3000;
-    ctx.Eip = (DWORD)thread_man_->GetProcAddr(hProc);
-    ctx.Eax = (DWORD)start_addr;
-    ctx.Ecx = ctx.Eip + 0x40;
-    ctx.Edx = 0xffffffff;
-    ctx.Esp = (DWORD)stack.ExpandableStackBase - 0x10;
-    ctx.Ebp = param;
-
-     // NTSYSAPI
-     // NTSTATUS
-     // NTAPI
-     // NtCreateThread(
-     //   _Out_ PHANDLE             ThreadHandle,
-     //   _In_  ACCESS_MASK         DesiredAccess,
-     //   _In_  POBJECT_ATTRIBUTES  ObjectAttributes,
-     //   _In_  HANDLE              ProcessHandle,
-     //   _Out_ PCLIENT_ID          ClientId,
-     //   _In_  PCONTEXT            ThreadContext,
-     //   _In_  PUSER_STACK         UserStack,
-     //   _In_  BOOLEAN             CreateSuspended
-     // );
-    if (NT_SUCCESS(NtCreateThread(
-        &hThread, // _Out_ PHANDLE             ThreadHandle,
-        THREAD_ALL_ACCESS, // _In_ ACCESS_MASK DesiredAccess,
-        nullptr,  // _In_  POBJECT_ATTRIBUTES  ObjectAttributes,
-        hProc,    // _In_  HANDLE              ProcessHandle,
-        &id,      // _Out_ PCLIENT_ID          ClientId,
-        &ctx,     // _In_  PCONTEXT            ThreadContext,
-        &stack,   // _In_  PUSER_STACK         UserStack,
-        TRUE      // _In_  BOOLEAN             CreateSuspended
-      ))) {
-      // On x64 Windows, NtCreateThread in ntdll calls NtCreateThread in ntoskrnl via WOW64,
-      // which maps 32-bit system call to the correspond 64-bit version.
-      // This layer doesn't correctly copy whole CONTEXT structure, so we must set it manually
-      // after the thread is created.
-      // On x86 Windows, this step is not necessary.
-      NtSetContextThread(hThread, &ctx);
-      NtResumeThread(hThread, 0);
-    } else
-      hThread = INVALID_HANDLE_VALUE;
-
-  } else {
-    // jichi 9/27/2013: CreateRemoteThread works on both Wine and Windows 7
-    // Use CreateRemoteThread instead
-    // FIXME 10/5/2031: Though sometimes works, CreateRemoteThread randomly crashes on wine.
-    // See:
-    // - http://www.unknowncheats.me/forum/c-and-c/64775-createremotethread-dll-injection.html
-    // - http://source.winehq.org/WineAPI/CreateRemoteThread.html
-    // - http://msdn.microsoft.com/en-us/library/windows/desktop/ms682437%28v=vs.85%29.aspx
-    // HANDLE WINAPI CreateRemoteThread(
-    //   _In_   HANDLE hProcess,
-    //   _In_   LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    //   _In_   SIZE_T dwStackSize,
-    //   _In_   LPTHREAD_START_ROUTINE lpStartAddress,
-    //   _In_   LPVOID lpParameter,
-    //   _In_   DWORD dwCreationFlags,
-    //   _Out_  LPDWORD lpThreadId
-    // );
-    //ITH_TRY {
     if (hProc == INVALID_HANDLE_VALUE)
       hProc = GetCurrentProcess();
-    //DWORD dwThreadId;
-    hThread = CreateRemoteThread(
-      hProc,        // _In_ HANDLE hProcess,
-      nullptr,      // _In_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-      0,            // _In_ SIZE_T dwStackSize,
-      (LPTHREAD_START_ROUTINE)start_addr,  // _In_ LPTHREAD_START_ROUTINE lpStartAddress,
-      (LPVOID)param,  // _In_ LPVOID lpParameter,
-      0,            //STACK_SIZE_PARAM_IS_A_RESERVATION  // _In_ DWORD dwCreationFlags,
-      nullptr       // _Out_ LPDWORD lpThreadId
-    );
+    hThread = CreateRemoteThread(hProc, nullptr, 0, (LPTHREAD_START_ROUTINE)start_addr, (LPVOID)param, 0, nullptr);
     if (!hThread)   // jichi: this function returns nullptr instead of -1
       hThread = INVALID_HANDLE_VALUE;
-    //} ITH_EXCEPT {
-    //  ITH_WARN(L"exception");
-    //  hThread = INVALID_HANDLE_VALUE;
-    //}
-  }
-  /*
-  else {
-    // jichi 9/29/2013: Also work on Wine and Windows 7
-    // See: http://waleedassar.blogspot.com/2012/06/createremotethread-vs.html
-    CLIENT_ID id;
-    //DWORD size = DEFAULT_STACK_LIMIT,
-    //      commit = DEFAULT_STACK_COMMIT;
-    DWORD reserve = 0,
-          commit = 0;
-    // http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/Executable%20Images/RtlCreateUserThread.html
-    //   NTSYSAPI
-    //   NTSTATUS
-    //   NTAPI
-    //   RtlCreateUserThread(
-    //     IN HANDLE ProcessHandle,
-    //     IN PSECURITY_DESCRIPTOR SecurityDescriptor OPTIONAL,
-    //     IN BOOLEAN CreateSuspended,
-    //     IN ULONG StackZeroBits,
-    //     IN OUT PULONG StackReserved,
-    //     IN OUT PULONG StackCommit,
-    //     IN PVOID StartAddress,
-    //     IN PVOID StartParameter OPTIONAL,
-    //     OUT PHANDLE ThreadHandle,
-    //     OUT PCLIENT_ID ClientID);
-    if (!NT_SUCCESS(RtlCreateUserThread(
-        hProc,        // HANDLE hProcess,
-        nullptr,      // IN PSECURITY_DESCRIPTOR SecurityDescriptor OPTIONAL,
-        FALSE,        // IN BOOLEAN CreateSuspended,
-        0,            // IN ULONG StackZeroBits,
-        &reserve,     // IN OUT PULONG StackReserved,
-        &commit,      // IN OUT PULONG StackCommit,
-        (LPVOID)start_addr, // IN PVOID StartAddress,
-        (LPVOID)param,// IN PVOID StartParameter OPTIONAL,
-        &hThread,     // OUT PHANDLE ThreadHandle,
-        &id           // OUT PCLIENT_ID ClientID
-      )))
-      hThread = INVALID_HANDLE_VALUE;
-  }
-  */
+  
   return hThread;
 }
 
@@ -1433,128 +1149,3 @@ DWORD GetExportAddress(DWORD hModule,DWORD hash)
 }
 
 } // extern "C"
-
-// EOF
-
-/*__declspec(naked) void normal_asm()
-{
-  __asm
-  {
-    push ecx
-    push edx
-    mov fs:[0],esp
-    push ebp
-    call eax
-_terminate:
-    push eax
-    push -2
-    call dword ptr [NtTerminateThread]
-  }
-}*/
-
-/*
-__declspec(naked) void RegToStrAsm()
-{
-  __asm
-  {
-    mov edx, 8
-_cvt_loop:
-    mov eax, ecx
-    and eax, 0xF
-    cmp eax, 0xA
-    jb _below_ten
-    add al,7
-_below_ten:
-    add al,0x30
-    stosw
-    ror ecx,4
-    dec edx
-    jne _cvt_loop
-    retn
-  }
-}
-__declspec(naked) void except_asm()
-{
-  __asm
-  {
-    mov eax,[esp + 4]
-    xor esi,esi
-    mov ebp,[eax]
-    mov ecx,[esp + 0xC]
-    mov ebx,[ecx + 0xB8]
-    sub esp,0x240
-    lea edi,[esp + 0x40]
-    mov eax,esp
-    push esi
-    push 0x1C
-    push eax
-    push esi
-    push ebx
-    push -1
-    call dword ptr [NtQueryVirtualMemory]
-    test eax,eax
-    jne _terminate
-    mov eax,esp
-    push eax
-    push 0x200
-    push edi
-    push 2
-    push ebx
-    push -1
-    call dword ptr [NtQueryVirtualMemory]
-    test eax,eax
-    jne _terminate
-    pop esi
-    xadd edi,esi
-    std
-    mov al,0x5C
-    repen scasw
-    mov word ptr [edi + 2], 0x3A
-    mov ecx,ebx
-    sub ecx,[esp]
-    call RegToStrAsm
-    inc edi
-    inc edi
-    xchg esi,edi
-    mov ecx,ebp
-    call RegToStrAsm
-    inc edi
-    inc edi
-    xor eax,eax
-    mov [edi + 0x10], eax
-    push 0
-    push edi
-    push esi
-    push 0
-    call dword ptr [MessageBoxW]
-    or eax, -1
-    jmp _terminate
-  }
-}
-
-//Prompt for file name.
-HANDLE IthPromptCreateFile(DWORD option, DWORD share, DWORD disposition)
-{
-  OPENFILENAME ofn = {sizeof(ofn)};       // common dialog box structure
-  WCHAR szFile[MAX_PATH];       // buffer for file name
-  wcscpy(current_dir,L"ITH_export.txt");
-  wcscpy(szFile,file_path);
-
-  //szFile[0]=0;
-  ofn.lpstrFile = szFile + 4;
-  ofn.nMaxFile = MAX_PATH;
-  ofn.lpstrFilter = L"Text\0*.txt";
-  BOOL result;
-  if (disposition==FILE_OPEN)
-    result=GetOpenFileName(&ofn);
-  else
-    result=GetSaveFileName(&ofn);
-  if (result)
-  {
-    LPWSTR s=szFile+wcslen(szFile) - 4;
-    if (_wcsicmp(s,L".txt")!=0) wcscpy(s + 4,L".txt");
-    return IthCreateFileFullPath(szFile,option,share,disposition);
-  }
-  else return INVALID_HANDLE_VALUE;
-}
-*/

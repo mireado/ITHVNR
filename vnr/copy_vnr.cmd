@@ -18,7 +18,6 @@ xcopy %1\cpp\libs\ntinspect ntinspect /S /Y /I
 xcopy %1\cpp\libs\winkey winkey /S /Y /I
 xcopy %1\cpp\libs\winmaker winmaker /S /Y /I
 xcopy %1\cpp\libs\winmutex winmutex /S /Y /I
-xcopy %1\cpp\libs\winversion winversion /S /Y /I
 xcopy %1\cpp\libs\winseh winseh /S /Y /I
 xcopy %1\cpp\libs\wintimer wintimer /S /Y /I
 xcopy %1\cpp\libs\windbg windbg /S /Y /I

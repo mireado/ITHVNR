@@ -19,13 +19,7 @@ set(vnrhost_src
   host.cc
   pipe.cc
   textthread.cc
-  ${PROJECT_SOURCE_DIR}/winmaker/winmaker.h
-  ${PROJECT_SOURCE_DIR}/winmaker/winmaker.cc
   ${PROJECT_SOURCE_DIR}/winmutex/winmutex.h
-#  ${PROJECT_SOURCE_DIR}/wintimer/wintimer.h
-#  ${PROJECT_SOURCE_DIR}/wintimer/wintimer.cc
-#  ${PROJECT_SOURCE_DIR}/wintimer/wintimerbase.cc
-#  ${PROJECT_SOURCE_DIR}/wintimer/wintimerbase.h
   ${PROJECT_SOURCE_DIR}/windbg/windbg.h
   ${PROJECT_SOURCE_DIR}/windbg/windbg_p.h
   ${PROJECT_SOURCE_DIR}/windbg/inject.h
